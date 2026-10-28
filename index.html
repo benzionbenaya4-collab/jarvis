@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="he">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>J.A.R.V.I.S</title>
+  <meta name="theme-color" content="#000308" />
+  <meta name="description" content="J.A.R.V.I.S - personal AI assistant" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600&family=Heebo:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+
+  <script>window.JARVIS_WEB = true;</script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <!-- MediaPipe Hands (classic solution API) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous" defer></script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <!-- Top HUD -->
+  <header class="hud-top">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <div>
+        <h1>J.A.R.V.I.S</h1>
+        <p class="sub">Just A Rather Very Intelligent System</p>
+      </div>
+    </div>
+    <div class="hud-stats">
+      <div class="stat"><span class="label">STATUS</span><span id="status" class="value">BOOTING</span></div>
+      <div class="stat"><span class="label">CORE</span><span id="core-hex" class="value">#00E5FF</span></div>
+      <div class="stat"><span class="label">TIME</span><span id="clock" class="value">--:--:--</span></div>
+    </div>
+  </header>
+
+  <!-- Side decoration -->
+  <aside class="hud-side left" aria-hidden="true">
+    <div class="gauge"><span>AUDIO</span><div class="bar"><i id="audio-bar"></i></div></div>
+    <div class="gauge"><span>SCALE</span><div class="bar"><i id="scale-bar"></i></div></div>
+    <div class="gauge"><span>LINK</span><div class="bar"><i id="link-bar"></i></div></div>
+    <ul class="sys-log" id="sys-log"></ul>
+  </aside>
+
+  <!-- Conversation -->
+  <main class="console">
+    <div id="model-progress" class="model-progress" dir="rtl" hidden>
+      <span id="model-progress-text">טוען את המוח של ג'ארביס...</span>
+      <div class="bar"><i id="model-progress-bar"></i></div>
+      <small>בפעם הראשונה בלבד: ההורדה נשמרת בדפדפן</small>
+    </div>
+    <div id="transcript" class="transcript" aria-live="polite"></div>
+    <div id="interim" class="interim" dir="auto"></div>
+    <form id="chat-form" class="input-bar" autocomplete="off">
+      <button type="button" id="btn-mic" class="icon-btn mic" title="Talk (Space)" aria-label="Microphone">
+        <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2Z"/></svg>
+      </button>
+      <button type="button" id="btn-call" class="icon-btn call" title="מצב שיחה · Conversation" aria-label="Conversation mode" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1L6.6 10.8Z"/></svg>
+      </button>
+      <input id="chat-input" type="text" dir="auto" placeholder="דבר אל ג'ארביס... / Talk to Jarvis..." />
+      <button type="submit" class="icon-btn send" aria-label="Send">
+        <svg viewBox="0 0 24 24"><path d="M3 20.5 21 12 3 3.5v6.6l12 1.9-12 1.9v6.6Z"/></svg>
+      </button>
+    </form>
+    <div class="toolbar">
+      <button type="button" id="btn-lang" class="chip" title="Recognition language">עב</button>
+      <button type="button" id="btn-voice" class="chip active" title="Speak replies">VOICE</button>
+      <button type="button" id="btn-cam" class="chip" title="Hand gestures">GESTURES</button>
+      <button type="button" id="btn-color" class="chip" title="Change color">COLOR</button>
+      <button type="button" id="btn-clean" class="chip" title="מצב נקי · hide all controls">CLEAN</button>
+      <button type="button" id="btn-model" class="chip" title="AI model size" hidden>AI</button>
+      <button type="button" id="btn-install" class="chip hidden" title="Install app">INSTALL</button>
+    </div>
+  </main>
+
+  <!-- Color picker panel -->
+  <section id="color-panel" class="color-panel" aria-hidden="true" aria-label="Core color">
+    <div class="panel-head">
+      <span class="panel-title">CORE CHROMA</span>
+      <button type="button" class="close" id="color-close" aria-label="Close">✕</button>
+    </div>
+    <div class="preview">
+      <div id="color-orb" class="orb"></div>
+      <div class="hex-wrap">
+        <label for="color-hex">HEX</label>
+        <input id="color-hex" type="text" maxlength="7" spellcheck="false" />
+      </div>
+    </div>
+    <div class="sv-wrap"><canvas id="sv-canvas" width="240" height="160"></canvas><span id="sv-cursor" class="sv-cursor"></span></div>
+    <div class="hue-wrap"><canvas id="hue-canvas" width="240" height="14"></canvas><span id="hue-cursor" class="hue-cursor"></span></div>
+    <div class="swatches" id="swatches"></div>
+    <div class="panel-actions">
+      <button type="button" id="color-cancel" class="btn ghost">ביטול</button>
+      <button type="button" id="color-confirm" class="btn primary">אישור · CONFIRM</button>
+    </div>
+  </section>
+
+  <!-- Webcam / gesture preview -->
+  <section id="cam-panel" class="cam-panel hidden" aria-label="Gesture camera">
+    <video id="cam-video" playsinline muted></video>
+    <canvas id="cam-overlay"></canvas>
+    <div class="cam-label"><span id="cam-status">HAND TRACKING</span><span id="pinch-readout">--</span></div>
+  </section>
+
+  <!-- Jarvis terminal (hidden until asked for) -->
+  <section id="terminal" class="terminal" aria-hidden="true" aria-label="Jarvis terminal" dir="ltr">
+    <div class="term-head">
+      <span class="term-title">JARVIS://TERMINAL</span>
+      <span class="term-head-actions">
+        <button type="button" id="term-clear" class="term-btn" title="Clear">CLEAR</button>
+        <button type="button" id="term-close" class="term-btn" title="Close (Ctrl+`)" aria-label="Close terminal">✕</button>
+      </span>
+    </div>
+    <div id="term-timers" class="term-timers" hidden></div>
+    <div id="term-log" class="term-log" role="log" aria-live="polite"></div>
+  </section>
+
+  <div id="toast" class="toast" role="status" dir="auto"></div>
+
+  <!-- Clean mode confirmation -->
+  <div id="clean-confirm" class="lock" hidden>
+    <div class="lock-card" dir="rtl" role="dialog" aria-modal="true" aria-labelledby="clean-title">
+      <h2 id="clean-title">מצב נקי</h2>
+      <p>האם אתה רוצה להוריד את כל הכפתורים והצ'אט, ולדבר עם ג'ארביס רק בקול?</p>
+      <p class="hint-small">ליציאה: Esc, לחיצה כפולה על המסך, או להגיד "תחזיר את הכפתורים"</p>
+      <div class="panel-actions" style="width:100%">
+        <button type="button" id="clean-no" class="btn ghost">לא</button>
+        <button type="button" id="clean-yes" class="btn primary">כן</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Access code screen (shown only on devices other than the host computer) -->
+  <div id="lock" class="lock" hidden>
+    <form id="lock-form" class="lock-card" autocomplete="off" dir="rtl">
+      <span class="brand-mark"></span>
+      <h2>J.A.R.V.I.S</h2>
+      <p>הזן את קוד הגישה שמופיע במחשב</p>
+      <input id="lock-input" type="password" dir="ltr" autocomplete="current-password" aria-label="Access code" />
+      <button type="submit" class="btn primary">כניסה · UNLOCK</button>
+      <p id="lock-error" class="lock-error" role="alert"></p>
+    </form>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
