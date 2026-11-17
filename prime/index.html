@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>JARVIS PRIME</title>
+  <meta name="theme-color" content="#000308" />
+  <meta name="description" content="JARVIS PRIME – עוזר אישי פרטי, בלי שרתים" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/prime.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="core" aria-hidden="true"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <!-- ============ main HUD ============ -->
+  <main id="hud" hidden>
+    <header class="top">
+      <div class="brand"><span class="mark"></span><h1>JARVIS PRIME</h1></div>
+      <div class="top-actions">
+        <span id="clock" class="clock">--:--</span>
+        <button id="btn-settings" class="icon-btn" aria-label="הגדרות" title="הגדרות">
+          <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.4-2.5.1-1-.1-1 2.1-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L15 3h-4l-.4 2.6a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L6.5 11l-.1 1 .1 1-2.1 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1L11 21h4l.4-2.6a7 7 0 0 0 1.7-1l2.5 1 2-3.5Z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section id="log" class="log" aria-live="polite"></section>
+
+    <form id="ask" class="ask" autocomplete="off">
+      <button type="button" id="btn-mic" class="icon-btn mic" aria-label="מיקרופון" title="דבר">
+        <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2Z"/></svg>
+      </button>
+      <input id="q" type="text" placeholder="דבר אליי, אדוני…" aria-label="הודעה" />
+      <button type="submit" class="icon-btn" aria-label="שלח">
+        <svg viewBox="0 0 24 24"><path d="M3 20l18-8L3 4v6l12 2-12 2v6Z" transform="scale(-1,1) translate(-24,0)"/></svg>
+      </button>
+    </form>
+  </main>
+
+  <!-- ============ setup screen ============ -->
+  <section id="setup" class="setup" hidden>
+    <div class="setup-inner">
+      <h1 class="title">JARVIS PRIME</h1>
+      <p class="sub">הגדרה לפני התקנה · הכול נשמר רק אצלך במכשיר 🔒</p>
+
+      <h2>1 · קול</h2>
+      <div id="voices" class="list"></div>
+      <details class="adv">
+        <summary>כיוון עדין</summary>
+        <label>קול במכשיר <select id="voice-name"></select></label>
+        <label>גובה <input id="pitch" type="range" min="0.5" max="1.4" step="0.05" /></label>
+        <label>מהירות <input id="rate" type="range" min="0.6" max="1.4" step="0.05" /></label>
+      </details>
+
+      <h2>2 · ליבה</h2>
+      <div class="row">
+        <button type="button" class="card pick" data-core="2d"><span class="mini c2d"></span><b>דו־מימד</b><small>קל ומהיר</small></button>
+        <button type="button" class="card pick" data-core="3d"><span class="mini c3d"></span><b>תלת־מימד</b><small data-size="core3d"></small></button>
+      </div>
+      <div id="fx" class="seg" role="radiogroup" aria-label="אפקטים">
+        <button type="button" data-fx="low">מעט אפקטים</button>
+        <button type="button" data-fx="high">הרבה אפקטים</button>
+      </div>
+
+      <h2>3 · תכונות <small>· מה להתקין</small></h2>
+      <p class="note">✅ תמיד פועל – לא שוקל כמעט כלום</p>
+      <div id="feat-always" class="list"></div>
+      <p class="note">⚙️ לבחירתך</p>
+      <div id="feat-opt" class="list"></div>
+
+      <div class="bar">
+        <div>גודל התקנה<br /><b id="total">0MB</b></div>
+        <button type="button" id="btn-install" class="btn">התקן ⬇</button>
+      </div>
+      <p id="install-msg" class="note center" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
