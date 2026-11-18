@@ -9,6 +9,7 @@ import * as kb from './knowledge.js';
 // camera.js and games.js are loaded only when used (speed)
 
 const $ = (s) => document.querySelector(s);
+export const VERSION = '1.4';
 let s = load();
 let core = null;
 
@@ -221,10 +222,25 @@ else {
   };
 
   // ask the browser for microphone access first – shows the real "allow microphone?" dialog
+  const DENIED = 'הדפדפן זוכר שפעם נאמר "לא" למיקרופון, ולכן הוא לא שואל שוב, אדוני. כדי לאפשר:\n'
+    + '1. ב־Chrome: לחץ על 🔒 (או ⓘ) ליד הכתובת ← הרשאות ← מיקרופון ← אפשר.\n'
+    + '2. או: ⋮ ← הגדרות ← הגדרות אתרים ← מיקרופון ← benzionbenaya4-collab.github.io ← אפשר.\n'
+    + '3. אם ג\'רוויס מותקן כאפליקציה: לחיצה ארוכה על האייקון ← ⓘ פרטי אפליקציה ← הרשאות ← מיקרופון ← אפשר.\n'
+    + 'ואז סגור ופתח את ג\'רוויס מחדש.';
   async function askMic() {
-    try { const st = await navigator.permissions?.query({ name: 'microphone' }); if (st?.state === 'granted') return true; } catch {}
-    try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach((t) => t.stop()); return true; }
-    catch (e) { say(ERR[/NotFound/.test(e.name) ? 'audio-capture' : 'not-allowed']); return false; }
+    let state = '';
+    try { state = (await navigator.permissions?.query({ name: 'microphone' }))?.state || ''; } catch {}
+    if (state === 'granted') return true;
+    if (state === 'denied') { const m = say(DENIED); m.style.whiteSpace = 'pre-line'; return false; }
+    if (!navigator.mediaDevices?.getUserMedia) { say('הדפדפן הזה לא נותן גישה למיקרופון, אדוני. נסה ב־Chrome.'); return false; }
+    addMsg('🎤 מבקש מהטלפון גישה למיקרופון – לחץ "אפשר" בחלון שנפתח.', 'j');
+    try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach((t) => t.stop()); addMsg('✓ יש גישה למיקרופון.', 'j'); return true; }
+    catch (e) {
+      if (/NotFound/.test(e.name)) say(ERR['audio-capture']);
+      else if (/NotReadable/.test(e.name)) say('אפליקציה אחרת משתמשת במיקרופון עכשיו, אדוני. סגור אותה ונסה שוב.');
+      else { const m = say(DENIED); m.style.whiteSpace = 'pre-line'; }
+      return false;
+    }
   }
   mic.askMic = askMic;
 

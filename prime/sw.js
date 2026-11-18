@@ -1,5 +1,5 @@
 // JARVIS PRIME service worker – offline app shell + only the features the user picked.
-const CACHE = 'prime-v6';
+const CACHE = 'prime-v7';
 const SHELL = [
   './', 'index.html', 'install.html', 'js/install.js', 'manifest.json', 'css/prime.css',
   'js/app.js', 'js/settings.js', 'js/setup.js', 'js/features.js', 'js/voice.js',
@@ -9,7 +9,7 @@ const SHELL = [
 const CDN = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('prime-') && k !== CACHE).map((k) => caches.delete(k))))
@@ -24,11 +24,12 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin && !CDN.includes(url.hostname)) return;
-  // cache first, then network (and remember what we fetched)
-  e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-    if (res.ok && (url.origin === location.origin || CDN.includes(url.hostname))) {
-      const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy));
-    }
-    return res;
-  })));
+  const keep = (res) => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); } return res; };
+  if (url.origin === location.origin) {
+    // our own files: always try the newest version first, fall back to the saved copy when offline
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(keep).catch(() => caches.match(req)));
+  } else {
+    // libraries from the CDN never change (fixed versions): saved copy first
+    e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then(keep)));
+  }
 });
