@@ -1,5 +1,5 @@
 // JARVIS PRIME service worker – offline app shell + only the features the user picked.
-const CACHE = 'prime-v4';
+const CACHE = 'prime-v5';
 const SHELL = [
   './', 'index.html', 'install.html', 'js/install.js', 'manifest.json', 'css/prime.css',
   'js/app.js', 'js/settings.js', 'js/setup.js', 'js/features.js', 'js/voice.js',

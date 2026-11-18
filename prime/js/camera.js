@@ -15,12 +15,12 @@ export function stop() { active?.stop(); active = null; box(false); }
 
 export async function startHands(core, onStatus) {
   stop();
-  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js');
+  try { await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js'); } catch { throw new Error('load hands model failed'); }
   const { GestureController } = await import('../../js/gestures.js');
   const g = new GestureController({ video: $('#cam-video'), overlay: $('#cam-overlay'),
     onScale: (sc) => core.setGestureScale(sc), onStatus: (st) => onStatus?.(st) });
   box(true, false);
-  await g.start();
+  try { await g.start(); } catch (e) { g.stop(); throw e; }
   active = { kind: 'hands', stop: () => g.stop() };
 }
 
@@ -32,12 +32,16 @@ export async function startPose(onStatus, accent = '#00e5ff') {
   const { PoseLandmarker, FilesetResolver } = await import(`${V}/vision_bundle.mjs`);
   onStatus?.('טוען את מודל הזיהוי…');
   const fs = await FilesetResolver.forVisionTasks(`${V}/wasm`);
-  const pl = await PoseLandmarker.createFromOptions(fs, {
-    baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task', delegate: 'GPU' },
+  const opts = (delegate) => ({
+    baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task', delegate },
     runningMode: 'VIDEO', numPoses: 4,
   });
+  let pl;
+  try { pl = await PoseLandmarker.createFromOptions(fs, opts('GPU')); } catch { pl = await PoseLandmarker.createFromOptions(fs, opts('CPU')); } // some phones have no WebGL2
   const video = $('#cam-video'), cv = $('#cam-overlay'), g = cv.getContext('2d');
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 960 } }, audio: false });
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 960 } }, audio: false }); }
+  catch (e) { pl.close(); throw e; }
   video.srcObject = stream; await video.play();
   box(true, true);
   let on = true, last = -1, count = -1;

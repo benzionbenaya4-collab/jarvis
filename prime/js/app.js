@@ -35,7 +35,12 @@ async function start() {
 let camMod = null;
 const cam = async (load = false) => (camMod ||= load ? await import('./camera.js') : null);
 const camStatus = (t) => { $('#cam-status').textContent = t; };
+let camBusy = false;
 async function toggleCam(kind) {
+  if (camBusy) return; camBusy = true;
+  try { await toggleCamInner(kind); } finally { camBusy = false; }
+}
+async function toggleCamInner(kind) {
   const c = await cam(true);
   const btn = $(kind === 'hands' ? '#btn-hands' : '#btn-pose');
   if (c.running() === kind) { c.stop(); btn.classList.remove('on'); btn.setAttribute('aria-pressed', 'false'); return; }
@@ -45,7 +50,12 @@ async function toggleCam(kind) {
     btn.classList.add('on'); btn.setAttribute('aria-pressed', 'true');
   } catch (e) {
     c.stop();
-    say(/Permission|NotAllowed/i.test(String(e)) ? 'אין לי הרשאה למצלמה, אדוני.' : 'לא הצלחתי להפעיל את המצלמה, אדוני.');
+    const n = e?.name || '', msg = String(e?.message || e);
+    say(/NotAllowed|Permission|Security/i.test(n + msg) ? 'אין לי הרשאה למצלמה, אדוני. לחץ על 🔒 ליד הכתובת ← הרשאות ← מצלמה ← לאפשר.'
+      : /NotReadable|TrackStart|in use/i.test(n + msg) ? 'המצלמה תפוסה באפליקציה אחרת, אדוני. סגור אותה ונסה שוב.'
+      : /NotFound|Overconstrained/i.test(n) ? 'לא מצאתי מצלמה מתאימה, אדוני.'
+      : /load|fetch|import|script|network/i.test(msg) ? 'לא הצלחתי להוריד את מודל הזיהוי – צריך אינטרנט בפעם הראשונה, אדוני.'
+      : `לא הצלחתי להפעיל את המצלמה, אדוני. (${(n || msg).slice(0, 60)})`);
   }
 }
 $('#btn-hands').onclick = () => toggleCam('hands');
@@ -86,6 +96,10 @@ async function handle(text, viaVoice = false) {
   if (r.game != null) {
     if (s.features.games) (await import('./games.js')).openGame(r.game);
     else m.firstChild.textContent = 'יצירת משחקים כבויה בהגדרות, אדוני. אפשר להדליק אותה ב־⚙.';
+  }
+  if (r.open) {
+    const w = window.open(r.open, '_blank');
+    if (w) { try { w.opener = null; } catch {} } else addActions(m, [[`↗ פתח את ${r.openName}`, () => window.open(r.open, '_blank', 'noopener')]]);
   }
   if (r.pose) { if (s.features.pose) toggleCam('pose'); else m.firstChild.textContent = 'זיהוי אנשים כבוי בהגדרות, אדוני. אפשר להדליק אותו ב־⚙.'; }
   if (r.hands) { if (s.features.hands) toggleCam('hands'); else m.firstChild.textContent = 'הידיים כבויות בהגדרות, אדוני. אפשר להדליק אותן ב־⚙.'; } // typed → keep typing; spoken → keep listening
@@ -135,31 +149,73 @@ diary.startAlerts((r) => {
 });
 
 // ------------------------------------------------------------ microphone + wake word
+// Privacy first: on-device recognition when the browser has it for Hebrew. Otherwise the browser
+// can only recognise speech through its maker's server (Google/Apple) – we ask ONCE before using that.
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const micBtn = $('#btn-mic'), wakeBtn = $('#btn-wake');
 const mic = {};
 if (!SR) { micBtn.hidden = true; wakeBtn.hidden = true; }
 else {
+  let mode = null; // 'local' | 'cloud' | null (not decided yet)
+  async function decideMode() {
+    if (mode) return mode;
+    if ('processLocally' in SR.prototype && SR.available) {
+      try {
+        let st = await SR.available({ langs: ['he-IL'], processLocally: true });
+        if ((st === 'downloadable' || st === 'downloading') && SR.install) {
+          addMsg('מוריד זיהוי דיבור בעברית למכשיר – פעם אחת…', 'j');
+          if (await SR.install({ langs: ['he-IL'], processLocally: true })) st = 'available';
+        }
+        if (st === 'available') return (mode = 'local');
+      } catch { /* fall through */ }
+    }
+    if (s.micCloud === true) return (mode = 'cloud');
+    if (s.micCloud === false) return null;
+    return new Promise((done) => {
+      const m = addMsg('כדי להבין דיבור בעברית, הדפדפן בטלפון הזה צריך לשלוח את הקול לשרת של Google (כמו במקלדת הקולית). כל השאר נשאר רק אצלך. להפעיל?', 'j');
+      addActions(m, [
+        ['🎤 כן, להפעיל', () => { s.micCloud = true; save(s); m.querySelector('.acts')?.remove(); done(mode = 'cloud'); }],
+        ['⌨️ לא, אקליד', () => { s.micCloud = false; save(s); m.querySelector('.acts')?.remove(); done(null); }],
+      ]);
+    });
+  }
   const make = (continuous) => {
-    const r = new SR(); r.lang = 'he-IL'; r.continuous = continuous; r.interimResults = false;
-    if ('processLocally' in r) r.processLocally = true;
+    const r = new SR(); r.lang = 'he-IL'; r.continuous = continuous; r.interimResults = false; r.maxAlternatives = 1;
+    if (mode === 'local' && 'processLocally' in r) r.processLocally = true;
     return r;
   };
-  const local = 'processLocally' in SR.prototype;
-  let warned = false;
-  const warn = () => { if (!local && !warned) { warned = true; addMsg('שים לב: בדפדפן הזה זיהוי הדיבור עובר דרך שרת של הדפדפן. בהקלדה – הכול נשאר במכשיר.', 'j'); } };
+  const ERR = {
+    'not-allowed': 'אין לי הרשאה למיקרופון, אדוני. לחץ על 🔒 ליד הכתובת ← הרשאות ← מיקרופון ← לאפשר. (באפליקציה מותקנת: הגדרות הטלפון ← אפליקציות ← PRIME ← הרשאות.)',
+    'service-not-allowed': 'הדפדפן חוסם זיהוי דיבור כאן, אדוני. נסה ב־Chrome.',
+    'audio-capture': 'לא מצאתי מיקרופון, אדוני.',
+    'network': 'זיהוי הדיבור צריך אינטרנט במכשיר הזה, אדוני.',
+    'language-not-supported': 'הדפדפן לא מכיר עברית בזיהוי דיבור, אדוני.',
+  };
+  const onErr = (e) => {
+    if (e.error === 'no-speech') { addMsg('לא שמעתי, אדוני. נסה שוב.', 'j'); return; }
+    if (e.error === 'aborted') return;
+    if (mode === 'local' && e.error !== 'not-allowed') { mode = null; s.micCloud = undefined; } // local failed → ask about cloud next time
+    if (e.error === 'not-allowed' && wake.on) wake.stop();
+    say(ERR[e.error] || `המיקרופון לא עבד (${e.error}), אדוני.`);
+  };
 
   // push-to-talk
-  const once = make(false);
-  once.onstart = () => { micBtn.classList.add('on'); core?.setMode('listening'); };
-  once.onend = () => { micBtn.classList.remove('on'); if (core?.mode === 'listening') core.setMode('idle'); if (wake.on) wake.resume(); };
-  once.onresult = (e) => handle(e.results[0][0].transcript, true);
-  mic.listenOnce = () => { wake.pause(); try { once.start(); } catch {} };
-  micBtn.onclick = () => { if (micBtn.classList.contains('on')) { once.stop(); return; } warn(); mic.listenOnce(); };
+  let once = null;
+  mic.listenOnce = async () => {
+    if (!(await decideMode())) return;
+    wake.pause();
+    once = make(false);
+    once.onstart = () => { micBtn.classList.add('on'); core?.setMode('listening'); };
+    once.onend = () => { micBtn.classList.remove('on'); if (core?.mode === 'listening') core.setMode('idle'); if (wake.on) wake.resume(); };
+    once.onerror = onErr;
+    once.onresult = (e) => handle(e.results[0][0].transcript, true);
+    try { once.start(); } catch (e) { say('המיקרופון תפוס, אדוני. נסה שוב.'); }
+  };
+  micBtn.onclick = () => { if (micBtn.classList.contains('on')) { once?.stop(); return; } mic.listenOnce(); };
 
   // wake word: listens only while the app is open and the 👂 button is on
-  const wake = { on: false, rec: null,
-    start() { this.on = true; this.resume(); wakeBtn.classList.add('on'); wakeBtn.setAttribute('aria-pressed', 'true'); },
+  const wake = { on: false, rec: null, fails: 0,
+    async start() { if (!(await decideMode())) return; this.on = true; this.fails = 0; this.resume(); wakeBtn.classList.add('on'); wakeBtn.setAttribute('aria-pressed', 'true'); addMsg('מקשיב ל"ג\'רוויס", אדוני.', 'j'); },
     stop() { this.on = false; this.pause(); wakeBtn.classList.remove('on'); wakeBtn.setAttribute('aria-pressed', 'false'); },
     pause() { const r = this.rec; this.rec = null; try { r?.abort(); } catch {} },
     resume() {
@@ -167,14 +223,16 @@ else {
       const r = this.rec = make(true);
       r.onresult = (e) => {
         const t = e.results[e.results.length - 1][0].transcript.trim();
+        this.fails = 0;
         if (/ג['׳]?ר?וויס|ג'ארוויס|jarvis/i.test(t)) handle(t, true);
       };
-      r.onend = () => { if (this.rec === r) { this.rec = null; setTimeout(() => this.resume(), 300); } };
+      r.onerror = (e) => { if (e.error === 'no-speech' || e.error === 'aborted') return; if (++this.fails > 2) { this.stop(); onErr(e); } };
+      r.onend = () => { if (this.rec === r) { this.rec = null; setTimeout(() => this.resume(), 400); } };
       try { r.start(); } catch { this.rec = null; }
     } };
-  wakeBtn.onclick = () => { if (wake.on) { wake.stop(); s.wake = false; } else { warn(); wake.start(); s.wake = true; } save(s); };
+  wakeBtn.onclick = () => { if (wake.on) { wake.stop(); s.wake = false; } else { wake.start(); s.wake = true; } save(s); };
   document.addEventListener('visibilitychange', () => { if (document.hidden) wake.pause(); else wake.resume(); });
-  if (s.wake) wake.start();
+  if (s.wake && s.micCloud !== undefined) wake.start();
 }
 
 // clock

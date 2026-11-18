@@ -20,7 +20,7 @@ const you = (x) => (' ' + x + ' ').replace(/ אני /g, ' אתה ').replace(/ ש
 let pending = null; // waiting for a follow-up answer (e.g. "when?")
 
 const time = () => new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-const HELP = 'אני יודע, אדוני: לבנות משחק עם שרבוטון ("תפתח משחק"), ללמוד ממך ("כשאני אומר X תגיד Y" או "לא, התשובה היא…"), לענות לשלום, להגיד שעה ותאריך, לחשב ("כמה זה 7 כפול 8"), '
+const HELP = 'אני יודע, אדוני: לפתוח אפליקציות ("תפתח יוטיוב", "תחפש ביוטיוב…"), לבנות משחק עם שרבוטון ("תפתח משחק"), ללמוד ממך ("כשאני אומר X תגיד Y" או "לא, התשובה היא…"), לענות לשלום, להגיד שעה ותאריך, לחשב ("כמה זה 7 כפול 8"), '
   + 'לרשום ביומן ("תרשום ביומן…"), להזכיר ("תזכיר לי לשתות בעוד 10 דקות"), לזכור דברים ("תזכור ש…") ולענות על שאלות ידע.';
 
 const SHORTCUTS = [
@@ -60,6 +60,9 @@ async function think(raw, ctx) {
   if (L) { const all = learned.get(); if (all[L[1].trim()]) { delete all[L[1].trim()]; learned.set(all); return { text: 'שכחתי, אדוני.', via: 'learn' }; } }
   if (/^(מה למדת|מה לימדתי אותך)$/.test(t)) { const all = Object.entries(learned.get()); return { text: all.length ? 'למדתי: ' + all.slice(-6).map(([q, a]) => `"${q}" → ${a}`).join(' · ') : 'עוד לא לימדת אותי כלום, אדוני.', via: 'learn' }; }
   const taught = learned.get()[t]; if (taught) { lastQ = t; return { text: taught, via: 'learned' }; }
+
+  // ---- open apps & sites ("תפתח יוטיוב", "תחפש ביוטיוב שירים")
+  const o = openTarget(t); if (o) return o;
 
   // ---- games with Shirbuton (pure code, opens instantly)
   if (/^(?:תפתח (?:לי )?)?(?:משחק|מיני משחק|משחק עם לבנים|בוא נשחק|תבנה (?:לי )?משחק|שרבוטון)(?: .*)?$/.test(t)) {
@@ -137,4 +140,35 @@ function math(t) {
     if (typeof v !== 'number' || !isFinite(v)) return null;
     return `${+v.toFixed(6)}, אדוני.`;
   } catch { return null; }
+}
+
+// Apps & sites. On phones these links open the installed app (YouTube, WhatsApp, Maps…).
+const APPS = [
+  [/^(יוטיוב|יו טיוב|youtube)$/, 'יוטיוב', 'https://www.youtube.com/'],
+  [/^(וואטסאפ|ווטסאפ|וואצאפ|ווצאפ|whatsapp)$/, 'וואטסאפ', 'https://wa.me/'],
+  [/^(גוגל|google)$/, 'גוגל', 'https://www.google.com/'],
+  [/^(מפות|גוגל מפות|google maps|מפה)$/, 'מפות', 'https://maps.google.com/'],
+  [/^(וויז|ווייז|waze)$/, 'Waze', 'https://waze.com/ul'],
+  [/^(ספוטיפיי|spotify)$/, 'ספוטיפיי', 'https://open.spotify.com/'],
+  [/^(טיקטוק|tiktok)$/, 'טיקטוק', 'https://www.tiktok.com/'],
+  [/^(אינסטגרם|אינסטה|instagram)$/, 'אינסטגרם', 'https://www.instagram.com/'],
+  [/^(ג'ימייל|גימייל|מייל|gmail)$/, 'Gmail', 'https://mail.google.com/'],
+  [/^(ויקיפדיה|wikipedia)$/, 'ויקיפדיה', 'https://he.wikipedia.org/'],
+  [/^(שרבוטים לוחמים|שרבוטים)$/, 'שרבוטים לוחמים', 'https://benzionbenaya4-collab.github.io/doodle-game/'],
+  [/^(קוביקה)$/, 'קוביקה', 'https://blockland-ibdp.onrender.com/'],
+];
+function openTarget(t) {
+  let m = t.match(/^(?:תחפש|חפש|תמצא)(?: לי)? ב(יוטיוב|גוגל|ויקיפדיה|מפות|ספוטיפיי) (.+)$/);
+  if (m) {
+    const q = encodeURIComponent(m[2]);
+    const url = { יוטיוב: `https://www.youtube.com/results?search_query=${q}`, גוגל: `https://www.google.com/search?q=${q}`,
+      ויקיפדיה: `https://he.wikipedia.org/w/index.php?search=${q}`, מפות: `https://maps.google.com/?q=${q}`, ספוטיפיי: `https://open.spotify.com/search/${q}` }[m[1]];
+    return { text: `מחפש ב${m[1]}: ${m[2]}, אדוני.`, via: 'open', open: url, openName: m[1] };
+  }
+  m = t.match(/^(?:תפתח|פתח|תיכנס|כנס|תעבור)(?: לי)?(?: את| ל| אל)?\s*(.+)$/);
+  if (!m) return null;
+  const name = m[1].trim();
+  for (const [re, label, url] of APPS) if (re.test(name)) return { text: `פותח את ${label}, אדוני.`, via: 'open', open: url, openName: label };
+  if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(name)) return { text: `פותח את ${name}, אדוני.`, via: 'open', open: 'https://' + name.replace(/^https?:\/\//, ''), openName: name };
+  return null;
 }
