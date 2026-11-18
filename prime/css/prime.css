@@ -110,3 +110,30 @@ button { font: inherit; color: inherit; }
 .btn:disabled { opacity: .6; }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ---------------------------------------------------------------- diary panel + message actions */
+.panel { position: fixed; inset: 0; z-index: 4; background: rgba(0,3,8,.82); backdrop-filter: blur(8px); overflow-y: auto; }
+.panel-inner { max-width: 560px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px 24px; }
+.panel header { display: flex; justify-content: space-between; align-items: center; }
+.panel h2 { margin: 0; color: var(--accent); font-size: 19px; }
+.panel h3 { margin: 18px 0 8px; font-size: 15px; color: var(--text); }
+.plist { display: flex; flex-direction: column; gap: 8px; }
+.pitem { display: flex; align-items: center; gap: 8px; background: rgba(12,23,38,.92); border: 1px solid #16304a; border-radius: 12px; padding: 10px 12px; }
+.pitem .t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.pitem small { display: block; color: var(--muted); font-size: 12px; }
+.pitem.done { opacity: .5; }
+.pitem button, .msg-act { border: 1px solid var(--line); background: none; color: var(--accent); border-radius: 8px; padding: 5px 9px; cursor: pointer; font-size: 13px; flex: none; }
+.empty { color: var(--muted); font-size: 13px; }
+.msg .acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.panel .ask { padding: 12px 0 0; }
+.toast { position: fixed; top: max(70px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 6;
+  background: var(--accent); color: #002; font-weight: 700; padding: 12px 18px; border-radius: 12px; box-shadow: var(--glow); max-width: 90vw; animation: in .3s; }
+@media (max-width: 480px) {
+  .clock { display: none; }
+  .top .icon-btn { width: 38px; height: 38px; }
+  .top .icon-btn svg { width: 18px; height: 18px; }
+  .top-actions { gap: 6px; }
+  .brand { gap: 8px; }
+  .mark { width: 22px; height: 22px; }
+  .brand h1 { font-size: 13px; letter-spacing: .18em; }
+}

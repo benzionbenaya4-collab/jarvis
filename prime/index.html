@@ -32,6 +32,12 @@
       <div class="brand"><span class="mark"></span><h1>JARVIS PRIME</h1></div>
       <div class="top-actions">
         <span id="clock" class="clock">--:--</span>
+        <button id="btn-wake" class="icon-btn" aria-label="האזנה למילה ג'רוויס" aria-pressed="false" title="האזנה ל&quot;ג'רוויס&quot;">
+          <svg viewBox="0 0 24 24"><path d="M17 20c-.3 0-.6-.1-.8-.2-.7-.4-1.1-.9-1.6-2.3-.5-1.4-1.3-2.1-2.1-2.8-.7-.6-1.4-1.2-2-2.3-.4-.8-.6-1.6-.6-2.4 0-2.8 2.2-5 5-5s5 2.2 5 5h-2c0-1.7-1.3-3-3-3s-3 1.3-3 3c0 .5.1 1 .4 1.4.4.8 1 1.3 1.6 1.8.9.8 1.9 1.6 2.6 3.4.3.9.5 1.1.8 1.3.2.1.6 0 .8-.2l1.4 1.4c-.5.6-1.3.9-2 .9ZM7.6 2.6 6.2 1.2A10 10 0 0 0 3 9a10 10 0 0 0 3.2 7.8l1.4-1.4A8 8 0 0 1 5 9c0-2.5 1-4.7 2.6-6.4Z"/></svg>
+        </button>
+        <button id="btn-diary" class="icon-btn" aria-label="יומן ותזכורות" title="יומן">
+          <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 16H5V8h14v11ZM7 10h5v5H7z"/></svg>
+        </button>
         <button id="btn-settings" class="icon-btn" aria-label="הגדרות" title="הגדרות">
           <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.4-2.5.1-1-.1-1 2.1-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L15 3h-4l-.4 2.6a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L6.5 11l-.1 1 .1 1-2.1 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1L11 21h4l.4-2.6a7 7 0 0 0 1.7-1l2.5 1 2-3.5Z"/></svg>
         </button>
@@ -50,6 +56,19 @@
       </button>
     </form>
   </main>
+
+  <!-- ============ diary panel ============ -->
+  <section id="diary" class="panel" hidden aria-label="יומן ותזכורות">
+    <div class="panel-inner">
+      <header><h2>📒 יומן ותזכורות</h2><button id="diary-close" class="icon-btn" aria-label="סגור">✕</button></header>
+      <h3>⏰ תזכורות</h3>
+      <div id="rem-list" class="plist"></div>
+      <h3>📝 יומן</h3>
+      <div id="note-list" class="plist"></div>
+      <form id="note-form" class="ask"><input id="note-in" placeholder="לרשום משהו ביומן…" aria-label="רשומה חדשה" /><button class="icon-btn" aria-label="הוסף">＋</button></form>
+      <p class="note">הכול נשמר רק במכשיר הזה. "📅" מוסיף את התזכורת ליומן של הטלפון – הוא יצלצל גם כשג'רוויס סגור.</p>
+    </div>
+  </section>
 
   <!-- ============ setup screen ============ -->
   <section id="setup" class="setup" hidden>

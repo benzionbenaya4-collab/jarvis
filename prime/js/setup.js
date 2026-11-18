@@ -148,5 +148,6 @@ async function cacheSelected(s) {
     'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js',
     'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/OutputPass.js');
   for (const f of OPTIONAL) if (s.features[f.id] && f.urls) urls.push(...f.urls);
+  if (s.features.knowledge) urls.push('knowledge/light.json', ...(s.knowledge !== 'light' ? ['knowledge/medium.json'] : []));
   reg.active?.postMessage({ type: 'cache-features', urls });
 }

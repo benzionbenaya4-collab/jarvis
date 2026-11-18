@@ -11,6 +11,7 @@ export const DEFAULTS = {
   fx: 'high',             // 3D only: 'low' | 'high'
   features: { games: true, hands: false, pose: false, knowledge: true },
   knowledge: 'light',     // 'light' | 'medium' | 'heavy'
+  wake: false,            // listen for "ג'רוויס" while the app is open
 };
 
 export function load() {
