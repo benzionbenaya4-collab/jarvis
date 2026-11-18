@@ -137,3 +137,18 @@ button { font: inherit; color: inherit; }
   .mark { width: 22px; height: 22px; }
   .brand h1 { font-size: 13px; letter-spacing: .18em; }
 }
+
+/* ---------------------------------------------------------------- camera + games */
+.cam { position: fixed; z-index: 3; left: 12px; top: 70px; width: 38vw; max-width: 240px; aspect-ratio: 4/3; border: 1px solid var(--line);
+  border-radius: 12px; overflow: hidden; background: #000; box-shadow: var(--glow); }
+.cam.big { left: 12px; right: 12px; width: auto; max-width: none; top: 64px; aspect-ratio: auto; height: 52vh; }
+.cam video, .cam canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cam:not(.big) video, .cam:not(.big) canvas { transform: scaleX(-1); } /* selfie mirror for hands */
+.cam.big video { opacity: .55; }
+.cam-status { position: absolute; bottom: 6px; right: 8px; margin: 0; font: 600 12px var(--font-ui); color: var(--accent); text-shadow: 0 0 6px #000; }
+.cam .icon-btn { position: absolute; top: 6px; left: 6px; width: 32px; height: 32px; font-size: 14px; }
+.game { position: fixed; inset: 0; z-index: 5; background: #f4f7fc; }
+.game iframe { width: 100%; height: 100%; border: 0; display: block; }
+.game > .icon-btn { position: absolute; top: 50%; left: 0; width: 34px; height: 56px; border-radius: 0 12px 12px 0; background: #1d2340; color: #fff; }
+.top .icon-btn { font-size: 17px; }
+@media (max-width: 420px) { .top:has(#btn-hands:not([hidden])):has(#btn-pose:not([hidden])) .brand h1 { display: none; } }

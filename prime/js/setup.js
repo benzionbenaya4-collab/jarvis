@@ -59,7 +59,9 @@ export function openSetup(s, onDone) {
   pitch.onchange = rate.onchange = () => speak(GREETING_HE, { preset: s.voice, voiceName: s.voiceName, pitch: s.pitch, rate: s.rate });
 
   // ---------------------------------------------------------- 2 · core
-  root.querySelector('[data-size="core3d"]').textContent = fmtMB(CORE3D_MB);
+  // speed: on a weak device suggest the light 2D core
+  const weak = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3;
+  root.querySelector('[data-size="core3d"]').textContent = fmtMB(CORE3D_MB) + (weak ? ' · למכשיר חזק' : '');
   const picks = root.querySelectorAll('[data-core]');
   const fx = $('#fx');
   const syncCore = () => {

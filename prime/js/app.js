@@ -6,6 +6,7 @@ import { reply } from './brain.js';
 import { speak, setHooks, GREETING_HE } from './voice.js';
 import * as diary from './diary.js';
 import * as kb from './knowledge.js';
+// camera.js and games.js are loaded only when used (speed)
 
 const $ = (s) => document.querySelector(s);
 let s = load();
@@ -25,7 +26,32 @@ async function start() {
     onEnd: () => { clearInterval(timer); core.setAudioLevel(0); core.setMode('idle'); if (listenNext) { listenNext = false; mic.listenOnce?.(); } },
   });
   if (s.features.knowledge) kb.loadLevel(s.knowledge);
+  $('#btn-hands').hidden = !s.features.hands;
+  $('#btn-pose').hidden = !s.features.pose;
+  (await cam())?.stop?.();
 }
+
+// ------------------------------------------------------------ camera features + games (lazy)
+let camMod = null;
+const cam = async (load = false) => (camMod ||= load ? await import('./camera.js') : null);
+const camStatus = (t) => { $('#cam-status').textContent = t; };
+async function toggleCam(kind) {
+  const c = await cam(true);
+  const btn = $(kind === 'hands' ? '#btn-hands' : '#btn-pose');
+  if (c.running() === kind) { c.stop(); btn.classList.remove('on'); btn.setAttribute('aria-pressed', 'false'); return; }
+  document.querySelectorAll('#btn-hands,#btn-pose').forEach((b) => { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
+  try {
+    if (kind === 'hands') await c.startHands(core, camStatus); else await c.startPose(camStatus);
+    btn.classList.add('on'); btn.setAttribute('aria-pressed', 'true');
+  } catch (e) {
+    c.stop();
+    say(/Permission|NotAllowed/i.test(String(e)) ? 'אין לי הרשאה למצלמה, אדוני.' : 'לא הצלחתי להפעיל את המצלמה, אדוני.');
+  }
+}
+$('#btn-hands').onclick = () => toggleCam('hands');
+$('#btn-pose').onclick = () => toggleCam('pose');
+$('#cam-close').onclick = async () => { (await cam())?.stop(); document.querySelectorAll('#btn-hands,#btn-pose').forEach((b) => b.classList.remove('on')); };
+$('#game-close').onclick = async () => (await import('./games.js')).closeGame();
 
 // ------------------------------------------------------------ chat
 function addMsg(text, who) {
@@ -56,7 +82,13 @@ async function handle(text, viaVoice = false) {
     addActions(m, [['📅 הוסף ליומן של הטלפון', () => diary.addToCalendar(r.reminder)]]);
   }
   if (r.openDiary) addActions(m, [['📒 פתח יומן', openDiary]]);
-  if (r.listen && viaVoice) listenNext = true; // typed → keep typing; spoken → keep listening
+  if (r.listen && viaVoice) listenNext = true;
+  if (r.game != null) {
+    if (s.features.games) (await import('./games.js')).openGame(r.game);
+    else m.firstChild.textContent = 'יצירת משחקים כבויה בהגדרות, אדוני. אפשר להדליק אותה ב־⚙.';
+  }
+  if (r.pose) { if (s.features.pose) toggleCam('pose'); else m.firstChild.textContent = 'זיהוי אנשים כבוי בהגדרות, אדוני. אפשר להדליק אותו ב־⚙.'; }
+  if (r.hands) { if (s.features.hands) toggleCam('hands'); else m.firstChild.textContent = 'הידיים כבויות בהגדרות, אדוני. אפשר להדליק אותן ב־⚙.'; } // typed → keep typing; spoken → keep listening
   if (!$('#diary').hidden) renderDiary();
 }
 function addActions(m, list) {

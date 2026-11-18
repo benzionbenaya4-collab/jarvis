@@ -5,6 +5,10 @@ import * as diary from './diary.js';
 import * as kb from './knowledge.js';
 
 const MEM = 'prime.memory.v1';
+const LEARN = 'prime.learn.v1';
+const learned = { get() { try { return JSON.parse(localStorage.getItem(LEARN)) || {}; } catch { return {}; } },
+  set(v) { try { localStorage.setItem(LEARN, JSON.stringify(v)); } catch {} } };
+let lastQ = null; // last question Jarvis answered – target for "לא, התשובה היא…"
 const mem = { get() { try { return JSON.parse(localStorage.getItem(MEM)) || []; } catch { return []; } },
   set(v) { try { localStorage.setItem(MEM, JSON.stringify(v)); } catch {} } };
 
@@ -16,7 +20,7 @@ const you = (x) => (' ' + x + ' ').replace(/ אני /g, ' אתה ').replace(/ ש
 let pending = null; // waiting for a follow-up answer (e.g. "when?")
 
 const time = () => new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-const HELP = 'אני יודע, אדוני: לענות לשלום, להגיד שעה ותאריך, לחשב ("כמה זה 7 כפול 8"), '
+const HELP = 'אני יודע, אדוני: לבנות משחק עם שרבוטון ("תפתח משחק"), ללמוד ממך ("כשאני אומר X תגיד Y" או "לא, התשובה היא…"), לענות לשלום, להגיד שעה ותאריך, לחשב ("כמה זה 7 כפול 8"), '
   + 'לרשום ביומן ("תרשום ביומן…"), להזכיר ("תזכיר לי לשתות בעוד 10 דקות"), לזכור דברים ("תזכור ש…") ולענות על שאלות ידע.';
 
 const SHORTCUTS = [
@@ -33,6 +37,12 @@ const SHORTCUTS = [
 
 // ---------------------------------------------------------------- main
 export async function reply(raw, ctx = {}) {
+  const r = await think(raw, ctx);
+  if (!/^(learn|learned|wake|reminder)$/.test(r.via)) lastQ = norm(raw).replace(/^(היי |הי )?ג'רוויס /, '');
+  return r;
+}
+
+async function think(raw, ctx) {
   let t = norm(raw);
 
   // wake word: "ג'רוויס" alone → "כן, אדוני?"; "ג'רוויס, <command>" → the command
@@ -40,6 +50,23 @@ export async function reply(raw, ctx = {}) {
   t = t.replace(/^(היי |הי )?ג'רוויס /, '');
 
   if (pending) { const p = pending; pending = null; const r = p(t); if (r) return r; }
+
+  // ---- learning from corrections (checked first, so what you taught always wins)
+  let L = t.match(/^כשאני (?:אומר|אגיד|כותב) (.+?) (?:תגיד|תענה|תאמר)(?: לי)? (.+)$/);
+  if (L) { const all = learned.get(); all[L[1].trim()] = L[2].trim(); learned.set(all); return { text: `למדתי, אדוני. כשתגיד "${L[1].trim()}" אענה "${L[2].trim()}".`, via: 'learn' }; }
+  L = t.match(/^(?:לא נכון|טעות|טעית|לא)[ ,]+(?:התשובה (?:היא|הנכונה היא) |תגיד |צריך להיות )?(.+)$/);
+  if (L && lastQ) { const all = learned.get(); all[lastQ] = L[1].trim(); learned.set(all); const q = lastQ; lastQ = null; return { text: `תודה על התיקון, אדוני. מעכשיו על "${q}" אענה: ${L[1].trim()}`, via: 'learn' }; }
+  L = t.match(/^(?:תשכח|שכח) (?:את )?(.+)$/);
+  if (L) { const all = learned.get(); if (all[L[1].trim()]) { delete all[L[1].trim()]; learned.set(all); return { text: 'שכחתי, אדוני.', via: 'learn' }; } }
+  if (/^(מה למדת|מה לימדתי אותך)$/.test(t)) { const all = Object.entries(learned.get()); return { text: all.length ? 'למדתי: ' + all.slice(-6).map(([q, a]) => `"${q}" → ${a}`).join(' · ') : 'עוד לא לימדת אותי כלום, אדוני.', via: 'learn' }; }
+  const taught = learned.get()[t]; if (taught) { lastQ = t; return { text: taught, via: 'learned' }; }
+
+  // ---- games with Shirbuton (pure code, opens instantly)
+  if (/^(?:תפתח (?:לי )?)?(?:משחק|מיני משחק|משחק עם לבנים|בוא נשחק|תבנה (?:לי )?משחק|שרבוטון)(?: .*)?$/.test(t)) {
+    return { text: 'פותח את עורך המשחקים, אדוני. שרבוטון מוכן לבנות לפי הפקודות שלך.', via: 'game', game: t.replace(/^(?:תפתח (?:לי )?)?(?:משחק|מיני משחק|משחק עם לבנים|בוא נשחק|תבנה (?:לי )?משחק|שרבוטון) ?(?:עם לבנים ?)?/, '') };
+  }
+  if (/^(?:תדליק|תפעיל|פתח|תפתח) (?:את )?(?:המצלמה|זיהוי אנשים|זיהוי)$/.test(t)) return { text: 'מפעיל זיהוי אנשים, אדוני. אני מזהה רק תנוחה – לא מי האדם.', via: 'pose', pose: true };
+  if (/^(?:תדליק|תפעיל) (?:את )?(?:הידיים|זום|ידיים)$/.test(t)) return { text: 'צבוט כדי להקטין, פשק כדי להגדיל, אדוני.', via: 'hands', hands: true };
 
   for (const [re, f] of SHORTCUTS) { const m = t.match(re); if (m) return { text: f(m), via: 'shortcut' }; }
 

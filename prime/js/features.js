@@ -7,10 +7,11 @@ export const ALWAYS = [
 ];
 
 export const OPTIONAL = [
-  { id: 'games', ic: '🎮', name: 'יצירת משחקים (שרבוטון)', desc: 'מיני־משחקים בקוד', mb: 1.5 },
+  { id: 'games', ic: '🎮', name: 'יצירת משחקים (שרבוטון)', desc: 'מיני־משחקים בקוד', mb: 0.3, urls: ['games/doodle.html'] },
   { id: 'hands', ic: '✋', name: 'ידיים – זום במצלמה', desc: 'הגדלה והקטנה של הליבה בצביטה', mb: 8,
-    urls: ['https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js'] },
-  { id: 'pose', ic: '🧍', name: 'זיהוי אנשים – שלד תלת־מימד', desc: 'רק "יש פה אדם ואיך הוא עומד" – בלי לזהות מי', mb: 10 },
+    urls: ['https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js', '../js/gestures.js'] },
+  { id: 'pose', ic: '🧍', name: 'זיהוי אנשים – שלד תלת־מימד', desc: 'רק "יש פה אדם ואיך הוא עומד" – בלי לזהות מי', mb: 10,
+    urls: ['https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs'] },
   { id: 'knowledge', ic: '📚', name: 'רמת ידע', desc: 'כמה ג\'רוויס יודע ומסביר', levels: true },
 ];
 
