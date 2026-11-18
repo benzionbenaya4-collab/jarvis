@@ -114,6 +114,7 @@ async function handle(text, viaVoice = false) {
     onToken: (t) => { live ||= addMsg('', 'j'); live.firstChild.textContent = t; },
   });
   live?.remove();
+  if (r.text === '__diag__') { const d = addMsg(await diagnose(), 'j'); d.style.whiteSpace = 'pre-line'; return; }
   const m = say(r.text);
   if (r.reminder) {
     diary.askPermission();
@@ -293,3 +294,21 @@ tick(); setInterval(tick, 10000);
 
 if (s.installed) start();
 else openSetup(s, (ns) => { s = ns; start().then(() => { say(GREETING_HE); if (window.__primeInstallTip) addMsg(window.__primeInstallTip, 'j'); }); });
+
+// "בדיקה" – a system check the user can screenshot when something doesn't work
+async function diagnose() {
+  const ua = navigator.userAgent;
+  const browser = /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /OPR|Opera/.test(ua) ? 'Opera' : /Edg/.test(ua) ? 'Edge'
+    : /Firefox/.test(ua) ? 'Firefox' : /CriOS|Chrome/.test(ua) ? 'Chrome ' + (ua.match(/Chrome\/(\d+)/)?.[1] || '') : /Safari/.test(ua) ? 'Safari' : 'לא ידוע';
+  const lines = [`🔎 בדיקת מערכת · גרסה ${VERSION}`, `דפדפן: ${browser}`, `מותקן כאפליקציה: ${matchMedia('(display-mode: standalone)').matches ? 'כן' : 'לא'}`,
+    `חיבור מאובטח: ${isSecureContext ? 'כן' : 'לא'}`, `זיהוי דיבור: ${(window.SpeechRecognition || window.webkitSpeechRecognition) ? 'יש' : 'אין'}`];
+  let perm = 'לא ידוע';
+  try { perm = (await navigator.permissions.query({ name: 'microphone' })).state; } catch {}
+  lines.push(`הרשאת מיקרופון: ${({ granted: 'מאושרת ✓', denied: 'חסומה ✗', prompt: 'עוד לא נשאל' })[perm] || perm}`);
+  if (!navigator.mediaDevices?.getUserMedia) lines.push('מיקרופון: הדפדפן לא מאפשר גישה');
+  else {
+    try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach((t) => t.stop()); lines.push('ניסיון לפתוח מיקרופון: הצליח ✓'); }
+    catch (e) { lines.push(`ניסיון לפתוח מיקרופון: נכשל – ${e.name}`); }
+  }
+  return lines.join('\n');
+}
