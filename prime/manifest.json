@@ -6,6 +6,8 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "categories": ["productivity", "utilities"],
   "orientation": "any",
   "lang": "he",
   "dir": "rtl",

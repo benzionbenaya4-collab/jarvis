@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>JARVIS PRIME · התקנה</title>
+  <meta name="theme-color" content="#000308" />
+  <meta name="description" content="ג'רוויס פריים – עוזר אישי פרטי. עובד בדפדפן או כאפליקציה בטלפון, Windows ו־Mac. בלי שרתים." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="../icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PRIME" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/prime.css" />
+  <style>
+    body { background: radial-gradient(circle at 50% -10%, #0d2a44, #000308 60%); min-height: 100vh; }
+    .wrap { max-width: 640px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 16px 40px; display: flex; flex-direction: column; gap: 18px; }
+    .hero { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .orb { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--accent); box-shadow: var(--glow), inset 0 0 0 12px #000308, inset 0 0 0 14px var(--accent);
+      background: radial-gradient(circle, #fff 0 14%, #9ff6ff 22%, var(--accent) 30%, transparent 32%); animation: breathe 3s ease-in-out infinite; }
+    @keyframes breathe { 50% { transform: scale(1.06); } }
+    h1 { margin: 0; font: 800 clamp(26px, 8vw, 40px) var(--font-hud); letter-spacing: .14em; color: #7ef9ff; text-shadow: var(--glow); direction: ltr; }
+    .tag { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; text-wrap: balance; }
+    .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+    .opt { background: rgba(12,23,38,.92); border: 1px solid #16304a; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+    .opt.main { border-color: var(--accent); box-shadow: 0 0 18px rgba(var(--accent-rgb), .22); }
+    .opt h2 { margin: 0; font-size: 19px; color: var(--accent); }
+    .opt p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .opt .btn { text-align: center; text-decoration: none; display: block; }
+    .btn.ghost { background: none; color: var(--accent); border: 1px solid var(--accent); box-shadow: none; }
+    .steps { margin: 0; padding-inline-start: 22px; line-height: 1.9; font-size: 15px; }
+    .plats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .plats button { background: #0a1420; border: 1px solid #16304a; color: var(--text); border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+    .plats button.on { border-color: var(--accent); color: var(--accent); }
+    .facts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; font-size: 13px; color: var(--muted); }
+    .facts span { border: 1px solid #16304a; border-radius: 999px; padding: 4px 10px; }
+    #ok { color: var(--ok); font-weight: 700; text-align: center; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="orb" aria-hidden="true"></div>
+      <h1>JARVIS PRIME</h1>
+      <p class="tag">העוזר האישי שלך – מהיר, מדבר עברית, ו־100% פרטי.<br />רץ רק אצלך במכשיר. בלי שרתים, בלי חשבון.</p>
+      <div class="facts"><span>📱 אנדרואיד</span><span>🍎 iPhone</span><span>🪟 Windows</span><span>💻 Mac</span><span>⚡ ‎0.4MB</span><span>📴 עובד בלי אינטרנט</span></div>
+    </div>
+
+    <div class="opts">
+      <section class="opt main">
+        <h2>📲 גרסת התקנה</h2>
+        <p>אפליקציה עם אייקון משלה, נפתחת בחלון משלה ועובדת גם בלי אינטרנט. מתאים לטלפון, Windows ו־Mac.</p>
+        <button id="btn-inst" class="btn" type="button">התקן את ג'רוויס פריים</button>
+        <p id="ok" hidden></p>
+      </section>
+      <section class="opt">
+        <h2>🌐 גרסת דפדפן</h2>
+        <p>בלי התקנה בכלל – נפתח מיד בדפדפן. אפשר להתקין אחר כך.</p>
+        <a class="btn ghost" href="./">פתח בדפדפן</a>
+      </section>
+    </div>
+
+    <section class="opt" id="how">
+      <h2>איך מתקינים ב<span id="plat-name">מכשיר שלך</span></h2>
+      <ol id="steps" class="steps"></ol>
+      <div class="plats" id="plats" role="tablist" aria-label="מכשיר"></div>
+    </section>
+  </div>
+  <script type="module">
+    import { install, isInstalled, platform, STEPS, NAMES } from './js/install.js';
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+    const $ = (s) => document.querySelector(s);
+    let cur = platform();
+    const show = (p) => {
+      cur = p; $('#plat-name').textContent = NAMES[p];
+      $('#steps').replaceChildren(...STEPS[p].map((t) => Object.assign(document.createElement('li'), { textContent: t })));
+      $('#plats').querySelectorAll('button').forEach((b) => { b.classList.toggle('on', b.dataset.p === p); b.setAttribute('aria-selected', String(b.dataset.p === p)); });
+    };
+    for (const p of ['android', 'ios', 'windows', 'mac', 'mac-safari']) {
+      const b = Object.assign(document.createElement('button'), { type: 'button', textContent: NAMES[p] });
+      b.dataset.p = p; b.setAttribute('role', 'tab'); b.onclick = () => show(p); $('#plats').append(b);
+    }
+    show(cur);
+    if (isInstalled()) { $('#ok').hidden = false; $('#ok').textContent = '✓ ג\'רוויס פריים כבר מותקן במכשיר הזה'; }
+    $('#btn-inst').onclick = async () => {
+      const r = await install();
+      if (r === 'installed') { $('#ok').hidden = false; $('#ok').textContent = '✓ הותקן! פתח את ג\'רוויס פריים מהמסך הראשי.'; }
+      else { show(cur); $('#how').scrollIntoView({ behavior: 'smooth' }); $('#how').animate([{ boxShadow: '0 0 0 3px #00e5ff' }, { boxShadow: 'none' }], 1600); }
+    };
+  </script>
+</body>
+</html>

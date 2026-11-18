@@ -6,8 +6,7 @@ import { save } from './settings.js';
 const $ = (s, r = document) => r.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
+import { install, isInstalled, platform, STEPS, NAMES } from './install.js';
 
 export function openSetup(s, onDone) {
   const root = $('#setup');
@@ -130,7 +129,11 @@ export function openSetup(s, onDone) {
     s.installed = true;
     if (!save(s)) msg.textContent = 'שים לב: הדפדפן חוסם שמירה – ההגדרות יישמרו רק עד שתסגור.';
     try { await cacheSelected(s); } catch { /* offline cache is a bonus */ }
-    if (deferredPrompt) { try { deferredPrompt.prompt(); await deferredPrompt.userChoice; } catch {} deferredPrompt = null; }
+    // install as an app (Android/Windows/Mac prompt; iPhone/Mac-Safari get the steps once)
+    if (!isInstalled()) {
+      const res = await install().catch(() => 'manual');
+      if (res === 'manual' && !s.installTip) { s.installTip = true; save(s); window.__primeInstallTip = `להתקנה כאפליקציה ב${NAMES[platform()]}: ` + STEPS[platform()].join(' ← '); }
+    }
     btn.disabled = false;
     root.hidden = true;
     msg.textContent = '';

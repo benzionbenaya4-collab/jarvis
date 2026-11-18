@@ -182,4 +182,4 @@ const tick = () => { $('#clock').textContent = new Date().toLocaleTimeString('he
 tick(); setInterval(tick, 10000);
 
 if (s.installed) start();
-else openSetup(s, (ns) => { s = ns; start().then(() => say(GREETING_HE)); });
+else openSetup(s, (ns) => { s = ns; start().then(() => { say(GREETING_HE); if (window.__primeInstallTip) addMsg(window.__primeInstallTip, 'j'); }); });
