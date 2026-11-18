@@ -1,9 +1,9 @@
 // JARVIS PRIME service worker – offline app shell + only the features the user picked.
-const CACHE = 'prime-v5';
+const CACHE = 'prime-v6';
 const SHELL = [
   './', 'index.html', 'install.html', 'js/install.js', 'manifest.json', 'css/prime.css',
   'js/app.js', 'js/settings.js', 'js/setup.js', 'js/features.js', 'js/voice.js',
-  'js/core.js', 'js/core2d.js', 'js/brain.js', 'js/diary.js', 'js/knowledge.js', 'js/camera.js', 'js/games.js',
+  'js/core.js', 'js/core2d.js', 'js/brain.js', 'js/diary.js', 'js/knowledge.js', 'js/camera.js', 'js/forge.js',
   '../icons/icon.svg', '../icons/icon-192.png', '../icons/icon-512.png',
 ];
 const CDN = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];

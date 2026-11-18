@@ -7,7 +7,7 @@ export const ALWAYS = [
 ];
 
 export const OPTIONAL = [
-  { id: 'games', ic: '🎮', name: 'יצירת משחקים (שרבוטון)', desc: 'מיני־משחקים בקוד', mb: 0.3, urls: ['games/doodle.html'] },
+  { id: 'games', ic: '🎮', name: 'יצירת משחקים', desc: 'ג\'רוויס בונה משחקים בעצמו, בטרמינל משלו', mb: 0.05, urls: ['js/forge.js'] },
   { id: 'hands', ic: '✋', name: 'ידיים – זום במצלמה', desc: 'הגדלה והקטנה של הליבה בצביטה', mb: 8,
     urls: ['https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js', '../js/gestures.js'] },
   { id: 'pose', ic: '🧍', name: 'זיהוי אנשים – שלד תלת־מימד', desc: 'רק "יש פה אדם ואיך הוא עומד" – בלי לזהות מי', mb: 10,

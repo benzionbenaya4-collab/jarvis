@@ -61,7 +61,26 @@ async function toggleCamInner(kind) {
 $('#btn-hands').onclick = () => toggleCam('hands');
 $('#btn-pose').onclick = () => toggleCam('pose');
 $('#cam-close').onclick = async () => { (await cam())?.stop(); document.querySelectorAll('#btn-hands,#btn-pose').forEach((b) => b.classList.remove('on')); };
-$('#game-close').onclick = async () => (await import('./games.js')).closeGame();
+// PRIME FORGE – Jarvis's own game terminal
+let forge = null;
+async function openForge() {
+  forge ||= await import('./forge.js');
+  forge.open($('#forge'), (t) => say(t));
+  return forge;
+}
+$('#forge-close').onclick = () => forge?.close($('#forge'));
+$('#forge-play').onclick = () => { if (forge) handleGame(forge.isPlaying() ? 'עצור' : 'שחק'); };
+for (const b of document.querySelectorAll('.fpad [data-pad]')) {
+  const k = b.dataset.pad, on = (e) => { e.preventDefault(); forge?.pad(k, true); }, off = () => forge?.pad(k, false);
+  b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
+}
+function handleGame(text) {
+  const r = forge.command(text);
+  if (!r) return false;
+  $('#forge-play').textContent = forge.isPlaying() ? '⏸ עצור' : '▶ שחק';
+  say(r.replace(/^[^\p{L}\d]+/u, ''));
+  return true;
+}
 
 // ------------------------------------------------------------ chat
 function addMsg(text, who) {
@@ -79,6 +98,8 @@ let listenNext = false;
 async function handle(text, viaVoice = false) {
   if (!text.trim()) return;
   addMsg(text, 'me');
+  // while the game terminal is open, build commands go straight to Jarvis's game builder
+  if (forge && !$('#forge').hidden && handleGame(text.replace(/^(היי |הי )?ג['׳]?רוויס,? /, ''))) return;
   core?.setMode('thinking');
   let live = null;
   const r = await reply(text, {
@@ -94,7 +115,7 @@ async function handle(text, viaVoice = false) {
   if (r.openDiary) addActions(m, [['📒 פתח יומן', openDiary]]);
   if (r.listen && viaVoice) listenNext = true;
   if (r.game != null) {
-    if (s.features.games) (await import('./games.js')).openGame(r.game);
+    if (s.features.games) { await openForge(); if (r.game.trim()) handleGame(r.game); }
     else m.firstChild.textContent = 'יצירת משחקים כבויה בהגדרות, אדוני. אפשר להדליק אותה ב־⚙.';
   }
   if (r.open) {
@@ -199,9 +220,18 @@ else {
     say(ERR[e.error] || `המיקרופון לא עבד (${e.error}), אדוני.`);
   };
 
+  // ask the browser for microphone access first – shows the real "allow microphone?" dialog
+  async function askMic() {
+    try { const st = await navigator.permissions?.query({ name: 'microphone' }); if (st?.state === 'granted') return true; } catch {}
+    try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach((t) => t.stop()); return true; }
+    catch (e) { say(ERR[/NotFound/.test(e.name) ? 'audio-capture' : 'not-allowed']); return false; }
+  }
+  mic.askMic = askMic;
+
   // push-to-talk
   let once = null;
   mic.listenOnce = async () => {
+    if (!(await askMic())) return;
     if (!(await decideMode())) return;
     wake.pause();
     once = make(false);
@@ -215,7 +245,7 @@ else {
 
   // wake word: listens only while the app is open and the 👂 button is on
   const wake = { on: false, rec: null, fails: 0,
-    async start() { if (!(await decideMode())) return; this.on = true; this.fails = 0; this.resume(); wakeBtn.classList.add('on'); wakeBtn.setAttribute('aria-pressed', 'true'); addMsg('מקשיב ל"ג\'רוויס", אדוני.', 'j'); },
+    async start() { if (!(await askMic())) return; if (!(await decideMode())) return; this.on = true; this.fails = 0; this.resume(); wakeBtn.classList.add('on'); wakeBtn.setAttribute('aria-pressed', 'true'); addMsg('מקשיב ל"ג\'רוויס", אדוני.', 'j'); },
     stop() { this.on = false; this.pause(); wakeBtn.classList.remove('on'); wakeBtn.setAttribute('aria-pressed', 'false'); },
     pause() { const r = this.rec; this.rec = null; try { r?.abort(); } catch {} },
     resume() {

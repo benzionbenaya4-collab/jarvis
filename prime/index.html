@@ -71,10 +71,15 @@
     <button id="cam-close" class="icon-btn" aria-label="כבה מצלמה">✕</button>
   </section>
 
-  <!-- ============ mini-games (Shirbuton) ============ -->
-  <section id="game" class="game" hidden aria-label="מיני משחקים">
-    <iframe id="game-frame" title="עורך משחקים עם שרבוטון"></iframe>
-    <button id="game-close" class="icon-btn" aria-label="חזרה לג'רוויס">✕</button>
+  <!-- ============ PRIME FORGE – Jarvis's own game terminal ============ -->
+  <section id="forge" class="forge" hidden aria-label="טרמינל המשחקים של ג'רוויס">
+    <header><b>PRIME FORGE</b><span>ג'רוויס בונה – אתה מדבר</span><button id="forge-close" class="icon-btn" aria-label="סגור את הטרמינל">✕</button></header>
+    <canvas class="fc" aria-label="המשחק"></canvas>
+    <div class="fpad" aria-label="שליטה">
+      <button data-pad="L" aria-label="שמאלה">◀</button><button data-pad="D" aria-label="למטה">▼</button><button data-pad="U" aria-label="קפיצה">⤒</button><button data-pad="R" aria-label="ימינה">▶</button>
+      <button id="forge-play" class="fplay">▶ שחק</button>
+    </div>
+    <div class="fl" aria-live="polite"></div>
   </section>
 
   <!-- ============ diary panel ============ -->

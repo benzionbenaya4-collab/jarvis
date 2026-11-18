@@ -129,6 +129,11 @@ export function openSetup(s, onDone) {
     s.installed = true;
     if (!save(s)) msg.textContent = 'שים לב: הדפדפן חוסם שמירה – ההגדרות יישמרו רק עד שתסגור.';
     try { await cacheSelected(s); } catch { /* offline cache is a bonus */ }
+    // ask for the microphone now, so talking to Jarvis works right away
+    if (navigator.mediaDevices?.getUserMedia && (window.SpeechRecognition || window.webkitSpeechRecognition)) {
+      msg.textContent = 'ג\'רוויס מבקש גישה למיקרופון – כדי שתוכל לדבר איתו.';
+      try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach((t) => t.stop()); } catch { /* user said no – typing still works */ }
+    }
     // install as an app (Android/Windows/Mac prompt; iPhone/Mac-Safari get the steps once)
     if (!isInstalled()) {
       const res = await install().catch(() => 'manual');
