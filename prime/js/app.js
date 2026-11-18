@@ -13,7 +13,13 @@ export const VERSION = '1.4';
 let s = load();
 let core = null;
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js').then((r) => r.update()).catch(() => {});
+  // a new version took over → reload once so the new files are used right away
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
+}
 
 async function start() {
   $('#hud').hidden = false;
