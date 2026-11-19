@@ -162,3 +162,8 @@ button { font: inherit; color: inherit; }
 body:has(#forge:not([hidden])) .log { max-height: 22vh; }
 .top .icon-btn { font-size: 17px; }
 @media (max-width: 420px) { .top:has(#btn-hands:not([hidden])):has(#btn-pose:not([hidden])) .brand h1 { display: none; } }
+.msg.challenge { max-width: 92%; border: 2px solid #ffd23f; box-shadow: 0 0 22px rgba(255,210,63,.35); background: rgba(26,20,2,.85); }
+.msg.challenge::before { content: "RIVALS CHALLENGE"; color: #ffd23f; }
+.msg.challenge span { display: flex; flex-direction: column; gap: 6px; }
+.msg.challenge b { font-size: 20px; color: #ffd23f; }
+.msg.challenge span span { font-size: 18px; font-weight: 700; line-height: 1.45; color: #fff; }

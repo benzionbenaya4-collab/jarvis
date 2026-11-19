@@ -9,7 +9,7 @@ import * as kb from './knowledge.js';
 // camera.js and games.js are loaded only when used (speed)
 
 const $ = (s) => document.querySelector(s);
-export const VERSION = '1.4';
+export const VERSION = '1.5';
 let s = load();
 let core = null;
 
@@ -115,6 +115,16 @@ async function handle(text, viaVoice = false) {
   });
   live?.remove();
   if (r.text === '__diag__') { const d = addMsg(await diagnose(), 'j'); d.style.whiteSpace = 'pre-line'; return; }
+  if (r.card) { // big challenge card – looks good in a screen recording
+    const c = addMsg('', 'j'); c.classList.add('challenge');
+    c.firstChild.innerHTML = '';
+    const h = document.createElement('b'); h.textContent = `⚔️ אתגר #${r.card.n}${r.card.hard ? ' · קשה 🔥' : ''}`;
+    const p = document.createElement('span'); p.textContent = r.card.text;
+    c.firstChild.append(h, p);
+    $('#log').scrollTop = $('#log').scrollHeight;
+    speak(r.text, voiceOpts());
+    return;
+  }
   const m = say(r.text);
   if (r.reminder) {
     diary.askPermission();

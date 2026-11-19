@@ -3,6 +3,7 @@
 import { GREETING_HE } from './voice.js';
 import * as diary from './diary.js';
 import * as kb from './knowledge.js';
+import * as challenges from './challenges.js';
 
 const MEM = 'prime.memory.v1';
 const LEARN = 'prime.learn.v1';
@@ -20,7 +21,7 @@ const you = (x) => (' ' + x + ' ').replace(/ אני /g, ' אתה ').replace(/ ש
 let pending = null; // waiting for a follow-up answer (e.g. "when?")
 
 const time = () => new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-const HELP = 'אני יודע, אדוני: לבנות משחקים בעצמי ("תבנה משחק", "תוסיף 3 אויבים", "שחק"), לפתוח אפליקציות ("תפתח יוטיוב", "תחפש ביוטיוב…"), לבנות משחק עם שרבוטון ("תפתח משחק"), ללמוד ממך ("כשאני אומר X תגיד Y" או "לא, התשובה היא…"), לענות לשלום, להגיד שעה ותאריך, לחשב ("כמה זה 7 כפול 8"), '
+const HELP = 'אני יודע, אדוני: לתת אתגרים ב־RIVALS ("תן לי אתגר", "אתגר קשה", "השלמתי"), לבנות משחקים בעצמי ("תבנה משחק", "תוסיף 3 אויבים", "שחק"), לפתוח אפליקציות ("תפתח יוטיוב", "תחפש ביוטיוב…"), לבנות משחק עם שרבוטון ("תפתח משחק"), ללמוד ממך ("כשאני אומר X תגיד Y" או "לא, התשובה היא…"), לענות לשלום, להגיד שעה ותאריך, לחשב ("כמה זה 7 כפול 8"), '
   + 'לרשום ביומן ("תרשום ביומן…"), להזכיר ("תזכיר לי לשתות בעוד 10 דקות"), לזכור דברים ("תזכור ש…") ולענות על שאלות ידע.';
 
 const SHORTCUTS = [
@@ -32,7 +33,7 @@ const SHORTCUTS = [
   [/^(תודה|תודה רבה|thanks)( ג'רוויס)?$/, () => 'לשירותך, אדוני.'],
   [/^(מי אתה|מה אתה|מה השם שלך|איך קוראים לך)$/, () => "אני ג'רוויס פריים, העוזר האישי שלך. אני רץ רק אצלך במכשיר – בלי שרתים."],
   [/^(מה שלומך|מה נשמע|מה קורה|מה המצב)$/, () => 'כל המערכות תקינות, אדוני. ומה שלומך?'],
-  [/^(גרסה|איזו גרסה|מה הגרסה)$/, () => 'ג\'רוויס פריים גרסה 1.4, אדוני.'],
+  [/^(גרסה|איזו גרסה|מה הגרסה)$/, () => 'ג\'רוויס פריים גרסה 1.5, אדוני.'],
   [/^(בדיקה|בדיקת מערכת|דיאגנוסטיקה)$/, () => '__diag__'],
   [/^(עזרה|מה אתה יודע לעשות|מה אתה יכול לעשות|פקודות)$/, () => HELP],
 ];
@@ -62,6 +63,9 @@ async function think(raw, ctx) {
   if (L) { const all = learned.get(); if (all[L[1].trim()]) { delete all[L[1].trim()]; learned.set(all); return { text: 'שכחתי, אדוני.', via: 'learn' }; } }
   if (/^(מה למדת|מה לימדתי אותך)$/.test(t)) { const all = Object.entries(learned.get()); return { text: all.length ? 'למדתי: ' + all.slice(-6).map(([q, a]) => `"${q}" → ${a}`).join(' · ') : 'עוד לא לימדת אותי כלום, אדוני.', via: 'learn' }; }
   const taught = learned.get()[t]; if (taught) { lastQ = t; return { text: taught, via: 'learned' }; }
+
+  // ---- RIVALS challenges
+  const ch = challenges.command(t, raw); if (ch) return ch;
 
   // ---- open apps & sites ("תפתח יוטיוב", "תחפש ביוטיוב שירים")
   const o = openTarget(t); if (o) return o;
