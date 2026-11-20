@@ -56,9 +56,12 @@ async function think(raw, ctx) {
 
   // ---- learning from corrections (checked first, so what you taught always wins)
   let L = t.match(/^כשאני (?:אומר|אגיד|כותב) (.+?) (?:תגיד|תענה|תאמר)(?: לי)? (.+)$/);
-  if (L) { const all = learned.get(); all[L[1].trim()] = L[2].trim(); learned.set(all); return { text: `למדתי, אדוני. כשתגיד "${L[1].trim()}" אענה "${L[2].trim()}".`, via: 'learn' }; }
+  if (L) { // keep the answer exactly as typed (punctuation, emoji)
+    const R = raw.trim().match(/(?:תגיד|תענה|תאמר)(?: לי)?\s+(.+)$/); const ans = (R ? R[1] : L[2]).trim();
+    const all = learned.get(); all[L[1].trim()] = ans; learned.set(all); return { text: `למדתי, אדוני. כשתגיד "${L[1].trim()}" אענה "${ans}".`, via: 'learn' }; }
   L = t.match(/^(?:לא נכון|טעות|טעית|לא)[ ,]+(?:התשובה (?:היא|הנכונה היא) |תגיד |צריך להיות )?(.+)$/);
-  if (L && lastQ) { const all = learned.get(); all[lastQ] = L[1].trim(); learned.set(all); const q = lastQ; lastQ = null; return { text: `תודה על התיקון, אדוני. מעכשיו על "${q}" אענה: ${L[1].trim()}`, via: 'learn' }; }
+  if (L && lastQ) { const R = raw.trim().match(/^(?:לא נכון|טעות|טעית|לא)[ ,]+(?:התשובה (?:היא|הנכונה היא) |תגיד |צריך להיות )?(.+)$/); const ans = (R ? R[1] : L[1]).trim();
+    const all = learned.get(); all[lastQ] = ans; learned.set(all); const q = lastQ; lastQ = null; return { text: `תודה על התיקון, אדוני. מעכשיו על "${q}" אענה: ${ans}`, via: 'learn' }; }
   L = t.match(/^(?:תשכח|שכח) (?:את )?(.+)$/);
   if (L) { const all = learned.get(); if (all[L[1].trim()]) { delete all[L[1].trim()]; learned.set(all); return { text: 'שכחתי, אדוני.', via: 'learn' }; } }
   if (/^(מה למדת|מה לימדתי אותך)$/.test(t)) { const all = Object.entries(learned.get()); return { text: all.length ? 'למדתי: ' + all.slice(-6).map(([q, a]) => `"${q}" → ${a}`).join(' · ') : 'עוד לא לימדת אותי כלום, אדוני.', via: 'learn' }; }
