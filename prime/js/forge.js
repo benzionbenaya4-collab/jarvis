@@ -271,7 +271,7 @@ function hurt(fell) {
   const P = play, p = P.p; if (P.over || (p.inv > 0 && !fell)) return;
   P.lives--; p.inv = 1.5;
   if (fell || P.lives <= 0) { p.x = p.sx; p.y = p.sy; p.vx = p.vy = 0; }
-  if (P.lives <= 0) { P.over = true; P.msg = { t: `💥 נגמר! ${P.score} נקודות – "שחק" לנסות שוב`, life: 99 }; onSay('נגמרו החיים, אדוני. רוצה לנסות שוב?'); }
+  if (P.lives <= 0) { P.over = true; P.msg = { t: `💥 נגמר! ${P.score} נקודות – כתבו "שחק" כדי לנסות שוב`, life: 99 }; onSay('נגמרו החיים, אדוני. רוצה לנסות שוב?'); }
 }
 function render() {
   const P = play, W = cv.width, H = cv.height, sc = H / (L.h * T), th = theme(), t = performance.now() / 1000;
@@ -286,7 +286,14 @@ function render() {
   const f = Math.round(16 * Math.min(2, devicePixelRatio || 1));
   g.font = `bold ${f}px Heebo, sans-serif`; g.fillStyle = '#fff'; g.textAlign = 'right';
   g.fillText(`⭐ ${P.score}   ❤ ${Math.max(0, P.lives)}`, W - 12, f + 8);
-  if (P.msg) { g.textAlign = 'center'; g.font = `bold ${f * 1.4}px Heebo, sans-serif`; g.fillText(P.msg.t, W / 2, H / 2); }
+  if (P.msg) { // fit the message to the screen; a second line after " – "
+    g.textAlign = 'center'; const [l1, l2] = P.msg.t.split(' – ');
+    let fs = f * 1.5; g.font = `bold ${fs}px Heebo, sans-serif`;
+    while (g.measureText(l1).width > W * 0.9 && fs > 10) { fs -= 2; g.font = `bold ${fs}px Heebo, sans-serif`; }
+    g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, H / 2 - fs * 1.3, W, fs * (l2 ? 2.6 : 1.8));
+    g.fillStyle = '#fff'; g.fillText(l1, W / 2, H / 2);
+    if (l2) { const s2 = Math.min(fs * 0.6, f); g.font = `bold ${s2}px Heebo, sans-serif`; g.fillStyle = '#ffd23f'; g.fillText(l2.replace(/"/g, ''), W / 2, H / 2 + fs * 0.95); }
+  }
 }
 export const isPlaying = () => !!play;
 
