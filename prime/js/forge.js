@@ -289,3 +289,6 @@ function render() {
   if (P.msg) { g.textAlign = 'center'; g.font = `bold ${f * 1.4}px Heebo, sans-serif`; g.fillText(P.msg.t, W / 2, H / 2); }
 }
 export const isPlaying = () => !!play;
+
+// read-only peek for automated tests / recordings
+export const _peek = () => play && { p: play.p, enemies: play.world.enemies, items: play.world.items, over: play.over, msg: play.msg, score: play.score, solid: (x, y) => solidAt(x, y), T, w: play.world.w };
